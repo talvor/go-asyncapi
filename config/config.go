@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/mcuadros/go-defaults"
 	"github.com/spf13/viper"
@@ -18,7 +19,6 @@ type Config struct {
 	DatabaseName     string `mapstructure:"DB_NAME"`
 	DatabaseHost     string `mapstructure:"DB_HOST"`
 	DatabasePort     string `mapstructure:"DB_PORT"`
-	DatabaseTestPort string `mapstructure:"DB_PORT_TEST"`
 	DatabaseUser     string `mapstructure:"DB_USER"`
 	DatabasePassword string `mapstructure:"DB_PASSWORD"`
 	Env              Env    `mapstructure:"ENV" default:"dev"`
@@ -26,27 +26,22 @@ type Config struct {
 }
 
 func (c Config) DatabaseURL() string {
-	port := c.DatabasePort
-	if c.Env == EnvTest {
-		port = c.DatabaseTestPort
-	}
-
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		c.DatabaseUser,
 		c.DatabasePassword,
 		c.DatabaseHost,
-		port,
+		c.DatabasePort,
 		c.DatabaseName,
 	)
 }
 
-func (c *Config) SetDatabaseTestPort(port string) {
-	c.DatabaseTestPort = port
+func (c *Config) SetDatabasePort(port string) {
+	c.DatabasePort = port
 }
 
-func New() (*Config, error) {
-	var cfg Config
+var config Config
 
+func init() {
 	viper.AddConfigPath("..")
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
@@ -54,14 +49,16 @@ func New() (*Config, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		log.Fatal(fmt.Errorf("failed to read config: %w", err))
 	}
 
-	err = viper.Unmarshal(&cfg)
+	err = viper.Unmarshal(&config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+		log.Fatal(fmt.Errorf("failed to unmarshal config: %w", err))
 	}
-	defaults.SetDefaults(&cfg)
+	defaults.SetDefaults(&config)
+}
 
-	return &cfg, nil
+func GetConfig() *Config {
+	return &config
 }

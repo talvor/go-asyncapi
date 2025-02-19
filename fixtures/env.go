@@ -26,8 +26,7 @@ type TestEnv struct {
 func NewTestEnv(t *testing.T) *TestEnv {
 	os.Setenv("ENV", string(config.EnvTest))
 
-	conf, err := config.New()
-	require.NoError(t, err)
+	conf := config.GetConfig()
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
@@ -52,7 +51,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	mappedPort, err := pgContainer.MappedPort(ctx, "5432")
 	require.NoError(t, err)
 
-	conf.SetDatabaseTestPort(mappedPort.Port())
+	conf.SetDatabasePort(mappedPort.Port())
 
 	db, err := store.NewPostgresDB(conf)
 	require.NoError(t, err)
