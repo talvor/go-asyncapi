@@ -3,7 +3,8 @@ package config
 import (
 	"fmt"
 
-	"github.com/caarlos0/env/v11"
+	"github.com/mcuadros/go-defaults"
+	"github.com/spf13/viper"
 )
 
 type Env string
@@ -14,14 +15,14 @@ const (
 )
 
 type Config struct {
-	DatabaseName     string `env:"DB_NAME"`
-	DatabaseHost     string `env:"DB_HOST"`
-	DatabasePort     string `env:"DB_PORT"`
-	DatabaseTestPort string `env:"DB_PORT_TEST"`
-	DatabaseUser     string `env:"DB_USER"`
-	DatabasePassword string `env:"DB_PASSWORD"`
-	Env              Env    `env:"ENV" envDefault:"dev"`
-	ProjectRoot      string `env:"PROJECT_ROOT"`
+	DatabaseName     string `mapstructure:"DB_NAME"`
+	DatabaseHost     string `mapstructure:"DB_HOST"`
+	DatabasePort     string `mapstructure:"DB_PORT"`
+	DatabaseTestPort string `mapstructure:"DB_PORT_TEST"`
+	DatabaseUser     string `mapstructure:"DB_USER"`
+	DatabasePassword string `mapstructure:"DB_PASSWORD"`
+	Env              Env    `mapstructure:"ENV" default:"dev"`
+	ProjectRoot      string `mapstructure:"PROJECT_ROOT"`
 }
 
 func (c Config) DatabaseURL() string {
@@ -45,9 +46,22 @@ func (c *Config) SetDatabaseTestPort(port string) {
 
 func New() (*Config, error) {
 	var cfg Config
-	cfg, err := env.ParseAs[Config]()
+
+	viper.AddConfigPath("..")
+	viper.SetConfigName("app")
+	viper.SetConfigType("env")
+	viper.AutomaticEnv()
+
+	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
+
+	err = viper.Unmarshal(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+	defaults.SetDefaults(&cfg)
+
 	return &cfg, nil
 }

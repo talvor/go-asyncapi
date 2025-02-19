@@ -12,6 +12,7 @@ import (
 
 func NewPostgresDB(conf *config.Config) (*sql.DB, error) {
 	dsn := conf.DatabaseURL()
+
 	// Open a connection to the database
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
