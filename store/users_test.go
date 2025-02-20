@@ -2,44 +2,87 @@ package store_test
 
 import (
 	"context"
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/talvor/asyncapi/fixtures"
 	"github.com/talvor/asyncapi/store"
 )
 
-func TestUserStore(t *testing.T) {
-	env := fixtures.NewTestEnv(t)
-	cleanup := env.SetupDB(t)
-	t.Cleanup(func() {
-		cleanup(t)
+var _ = Describe("UserStore", Ordered, func() {
+	var env *fixtures.TestEnv
+	var userStore *store.UserStore
+
+	BeforeAll(func() {
+		te, err := fixtures.NewTestEnv()
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(te.ContainerCleanup)
+		env = te
+		userStore = store.NewUserStore(env.DB)
 	})
 
-	ctx := context.Background()
-	now := time.Now()
+	BeforeEach(func() {
+		err := env.SetupDB()
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(env.TeardownDB)
+	})
 
-	userStore := store.NewUserStore(env.DB)
-	user, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
-	require.NoError(t, err)
-	require.Less(t, now.UnixNano(), user.CreatedAt.UnixNano())
+	It("should create a user", func() {
+		ctx := context.Background()
+		now := time.Now()
 
-	require.Equal(t, user.Email, "test@testing.com")
-	require.NoError(t, user.ComparePassword("testingpassword"))
+		user, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(user.ID).NotTo(BeZero())
+		Expect(user.Email).To(Equal("test@testing.com"))
+		Expect(now.UnixNano()).To(BeNumerically("<", user.CreatedAt.UnixNano()))
+	})
 
-	user2, err := userStore.ByID(ctx, user.ID)
-	require.NoError(t, err)
-	require.Equal(t, user.ID, user2.ID)
-	require.Equal(t, user.Email, user2.Email)
-	require.Equal(t, user.HashedPasswordBase64, user2.HashedPasswordBase64)
-	require.Equal(t, user.CreatedAt.UnixNano(), user2.CreatedAt.UnixNano())
+	It("should retrieve a user by ID", func() {
+		ctx := context.Background()
 
-	user2, err = userStore.ByEmail(ctx, user.Email)
-	require.NoError(t, err)
-	require.Equal(t, user.ID, user2.ID)
-	require.Equal(t, user.Email, user2.Email)
-	require.Equal(t, user.HashedPasswordBase64, user2.HashedPasswordBase64)
-	require.Equal(t, user.CreatedAt.UnixNano(), user2.CreatedAt.UnixNano())
+		user1, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
+		Expect(err).NotTo(HaveOccurred())
 
-}
+		user2, err := userStore.ByID(ctx, user1.ID)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(user2.ID).To(Equal(user1.ID))
+		Expect(user2.Email).To(Equal(user1.Email))
+		Expect(user2.HashedPasswordBase64).To(Equal(user1.HashedPasswordBase64))
+	})
+
+	It("should retrieve a user by Email", func() {
+		ctx := context.Background()
+
+		user1, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
+		Expect(err).NotTo(HaveOccurred())
+
+		user2, err := userStore.ByEmail(ctx, user1.Email)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(user2.ID).To(Equal(user1.ID))
+		Expect(user2.Email).To(Equal(user1.Email))
+		Expect(user2.HashedPasswordBase64).To(Equal(user1.HashedPasswordBase64))
+	})
+
+	Context("when a user exists", func() {
+		It("should compare correct password", func() {
+			ctx := context.Background()
+
+			user, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = user.ComparePassword("testingpassword")
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should not compare incorrect password", func() {
+			ctx := context.Background()
+
+			user, err := userStore.CreateUser(ctx, "test@testing.com", "testingpassword")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = user.ComparePassword("incorrectpassword")
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})

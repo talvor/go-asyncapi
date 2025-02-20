@@ -9,3 +9,6 @@ db_create_migration:
 
 db_migrate:
 	migrate -database ${DATABASE_URL} -path migrations up
+
+run_unit_tests:
+	TESTCONTAINERS_RYUK_DISABLED=true ginkgo run -v ./...
