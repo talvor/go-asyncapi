@@ -23,6 +23,9 @@ type Config struct {
 	DatabasePassword string `mapstructure:"DB_PASSWORD"`
 	Env              Env    `mapstructure:"ENV" default:"dev"`
 	ProjectRoot      string `mapstructure:"PROJECT_ROOT"`
+	APIPort          string `mapstructure:"API_PORT"`
+	APIHost          string `mapstructure:"API_HOST"`
+	JwtSecret        string `mapstructure:"JWT_SECRET"`
 }
 
 func (c Config) DatabaseURL() string {
@@ -42,6 +45,7 @@ func (c *Config) SetDatabasePort(port string) {
 var config Config
 
 func init() {
+	viper.AddConfigPath(".")
 	viper.AddConfigPath("..")
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")

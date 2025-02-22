@@ -1,0 +1,25 @@
+
+@host=http://localhost:8080
+
+###
+
+GET /ping
+
+### Good request
+
+POST /auth/signup
+Content-Type: application/json
+
+{
+  "email": "test1@testing.com",
+  "password": "password"
+}
+
+### Bad request
+
+POST /auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@testing.com"
+}

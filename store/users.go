@@ -41,7 +41,7 @@ func (s *UserStore) ByEmail(ctx context.Context, email string) (*dto.User, error
 
 	var user dto.User
 	if err := s.db.GetContext(ctx, &user, query, email); err != nil {
-		return nil, fmt.Errorf("failed to get user by email: %s %w", email, err)
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 	return &user, nil
 }
@@ -51,7 +51,7 @@ func (s *UserStore) ByID(ctx context.Context, userID uuid.UUID) (*dto.User, erro
 
 	var user dto.User
 	if err := s.db.GetContext(ctx, &user, query, userID); err != nil {
-		return nil, fmt.Errorf("failed to get user by id: %s %w", userID, err)
+		return nil, fmt.Errorf("failed to get user by id: %w", err)
 	}
 	return &user, nil
 }
