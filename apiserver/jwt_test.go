@@ -1,6 +1,9 @@
 package apiserver_test
 
 import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -51,5 +54,25 @@ var _ = Describe("JwtManager", Ordered, func() {
 		subject, err = tokenPair.RefreshToken.Claims.GetSubject()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(subject).To(Equal(userID.String()))
+	})
+
+	It("should fail to parse expired token", func() {
+		now := time.Now()
+
+		claims := apiserver.CustomClaims{
+			TokenType: "access",
+			RegisteredClaims: jwt.RegisteredClaims{
+				Subject:   "subject",
+				Issuer:    "issuer",
+				ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute * -15)),
+				IssuedAt:  jwt.NewNumericDate(now.Add(time.Minute * -30)),
+			},
+		}
+
+		token, err := jwtManager.GenerateToken(&claims)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = jwtManager.Parse(token.Raw)
+		Expect(err).Should(MatchError(ContainSubstring("token is expired")))
 	})
 })

@@ -1,1 +1,8 @@
 .envrc
+# terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate.backup
+
+# local stack volumes
+volumes/

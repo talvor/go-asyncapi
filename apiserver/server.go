@@ -13,14 +13,17 @@ import (
 )
 
 type APIServer struct {
-	config *config.Config
-	store  *store.Store
+	config     *config.Config
+	store      *store.Store
+	jwtManager *JwtManager
 }
 
 func New(config *config.Config, store *store.Store) *APIServer {
+	jwtManager := NewJwtManager(config)
 	return &APIServer{
-		config: config,
-		store:  store,
+		config:     config,
+		store:      store,
+		jwtManager: jwtManager,
 	}
 }
 
@@ -34,9 +37,12 @@ func (s *APIServer) Start() error {
 		TimeFormat: time.RFC3339,
 	}))
 
-	app.Get("/ping", s.ping())
+	app.Get("/ping", AuthMiddleware(s.jwtManager, s.store.Users), s.ping())
 
-	app.Post("/auth/signup", s.signupHandler())
+	auth := app.Group("/auth")
+	auth.Post("/signup", s.signupHandler())
+	auth.Post("/signin", s.signinHandler())
+	auth.Post("/refresh", s.refreshTokenHandler())
 
 	host := net.JoinHostPort(s.config.APIHost, s.config.APIPort)
 	slog.Info("starting server", "host", host)

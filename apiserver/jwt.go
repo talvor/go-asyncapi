@@ -73,7 +73,7 @@ func (j *JwtManager) GenerateTokenPair(userID uuid.UUID) (*TokenPair, error) {
 	}
 
 	// Generate access token
-	accessToken, err := j.generateToken(&claims)
+	accessToken, err := j.GenerateToken(&claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
@@ -81,7 +81,7 @@ func (j *JwtManager) GenerateTokenPair(userID uuid.UUID) (*TokenPair, error) {
 	// Generate refresh token
 	claims.TokenType = "refresh"
 	claims.ExpiresAt = jwt.NewNumericDate(now.Add(time.Hour * 24 * 30))
-	refreshToken, err := j.generateToken(&claims)
+	refreshToken, err := j.GenerateToken(&claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign refresh token: %w", err)
 	}
@@ -92,7 +92,7 @@ func (j *JwtManager) GenerateTokenPair(userID uuid.UUID) (*TokenPair, error) {
 	}, nil
 }
 
-func (j *JwtManager) generateToken(claims *CustomClaims) (*jwt.Token, error) {
+func (j *JwtManager) GenerateToken(claims *CustomClaims) (*jwt.Token, error) {
 	jwtToken := jwt.NewWithClaims(signingMethod, claims)
 
 	key := []byte(j.config.JwtSecret)
@@ -102,4 +102,18 @@ func (j *JwtManager) generateToken(claims *CustomClaims) (*jwt.Token, error) {
 		return nil, fmt.Errorf("failed to sign %s token: %w", claims.TokenType, err)
 	}
 	return jwtToken, nil
+}
+
+func (j *JwtManager) GetUserIDFromToken(token *jwt.Token) (uuid.UUID, error) {
+	subject, err := token.Claims.GetSubject()
+	if err != nil {
+		return uuid.New(), fmt.Errorf("failed to get subject from token: %w", err)
+	}
+
+	userID, err := uuid.Parse(subject)
+	if err != nil {
+		return uuid.New(), fmt.Errorf("failed to convert subject to UUID: %w", err)
+	}
+
+	return userID, nil
 }

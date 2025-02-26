@@ -1,25 +1,27 @@
-
 @host=http://localhost:8080
 
-###
-
-GET /ping
-
-### Good request
-
+### Signup
 POST /auth/signup
 Content-Type: application/json
-
 {
-  "email": "test1@testing.com",
+  "email": "test@testing.com",
   "password": "password"
 }
+?? status == 201
 
-### Bad request
-
-POST /auth/signup
+### Signin
+# @name tokens
+POST /auth/signin
 Content-Type: application/json
-
 {
-  "email": "test@testing.com"
+  "email": "test@testing.com",
+  "password": "password"
 }
+?? status == 200
+
+### Ping
+# @ref tokens
+GET /ping
+Authorization: Bearer {{tokens.data.access_token}}
+?? status == 200
+

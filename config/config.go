@@ -26,6 +26,12 @@ type Config struct {
 	APIPort          string `mapstructure:"API_PORT"`
 	APIHost          string `mapstructure:"API_HOST"`
 	JwtSecret        string `mapstructure:"JWT_SECRET"`
+
+	// AWS
+	S3Endpoint  string `mapstructure:"S3_LOCALSTACK_ENDPOINT"`
+	SQSEndpoint string `mapstructure:"LOCALSTACK_ENDPOINT"`
+	S3Bucket    string `mapstructure:"S3_BUCKET"`
+	SQSQueue    string `mapstructure:"SQS_QUEUE"`
 }
 
 func (c Config) DatabaseURL() string {
